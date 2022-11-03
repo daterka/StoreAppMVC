@@ -1,0 +1,248 @@
+﻿
+@model List<StoreApp.Models.ProductModel>
+
+@{
+    ViewBag.Title = "ProductsView";
+}
+
+
+<h2>Products List</h2>
+
+<button type="button" class="btn btn-primary btn-lg fixed" onclick="openAddProductModal()">
+    <span class="glyphicon glyphicon-plus" aria-hidden="true"></span>
+</button>
+
+
+<table class="table" id="products-table">
+    <thead>
+        <tr style="font-size: 18px">
+            <th width="15%">
+                Image
+            </th>
+            <th width="20%">
+                Title
+            </th>
+            <th width="10%">
+                Category
+            </th>
+            <th width="40%">
+                Description
+            </th>
+            <th width="10%">
+                Price
+            </th>
+            <th width="5%"></th>
+        </tr>
+    </thead>
+
+    <tbody>
+        @foreach (var item in Model)
+        {
+            <tr id="product-@item.Id">
+                <td>
+                    <img src="@Url.Content(item.Image)" alt="ProductImage" width="100px" />
+                </td>
+                <td>
+                    @Html.DisplayFor(modelItem => item.Title)
+                </td>
+                <td>
+                    @Html.DisplayFor(modelItem => item.Category)
+                </td>
+                <td>
+                    @Html.DisplayFor(modelItem => item.Description)
+                </td>
+                <td>
+                    @Html.DisplayFor(modelItem => item.Price)
+                </td>
+                <td>
+                    <button type="button" onclick="removeProductAjax(`@item.Id`, `@item.Title`)" class="btn btn-danger">X</button>
+                    @*                <button type="button" onclick="removeProductAjax(@item.Id)" class="btn btn-danger" data-toggle="modal" data-target="#removeConfirmationModal">X</button>
+                    *@                @*                <a href="#" class="RemoveLink" data-id="@item.Id" onclick="ajaxCallnack(@item.Id)">
+                        Remove from cart
+                    </a>*@
+                </td>
+            </tr>
+        }
+    </tbody>
+        
+</table>
+
+<!-- Remove Product Modal -->
+<div class="modal fade" id="removeConfirmationModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="removeConfirmationModalLabel"></h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+
+            <div class="modal-body"></div>
+
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                <button id="modal-accept-button" type="button" class="btn btn-primary" onclick="removeAjaxCallback()">Accept</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add new Product Modal -->
+<div class="modal fade" id="addProductModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="addProductModalLabel">Add new product</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+
+            <div class="modal-body">
+                <form>
+                    <div class="form-group">
+                        <label for="inputTitle">Title</label>
+                        <input type="text" class="form-control" id="inputTitle" placeholder="Enter product title">
+                    </div>
+                    <div class="form-group">
+                        <label for="inputCategory">Category</label>
+                        <input type="text" class="form-control" id="inputCategory" placeholder="Enter product category">
+                    </div>
+                    <div class="form-group">
+                        <label for="inputPrice">Price</label>
+                        <input type="text" class="form-control" id="inputPrice" placeholder="Enter product price">
+                    </div>
+                    <div class="form-group">
+                        <label for="FormControlTextareaDescription">Description</label>
+                        <textarea class="form-control" id="textareaDescription" placeholder="Here is the place for product description.."></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="inputImage">Image</label>
+                        <input type="text" class="form-control" id="inputImage" placeholder="Enter product image URL">
+                    </div>
+                </form>
+            </div>
+
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                <button id="modal-accept-button" type="button" class="btn btn-primary" onclick="saveProductAjaxCallback()">Save</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@Scripts.Render("~/bundles/knockout")
+
+@section scripts {
+    <script>
+@*        let newProduct = { Id: null, Title: 'AAA', Price: '', Category: '', Description: '', Image: '' };
+*@
+        function removeProductAjax(id, title) {
+            console.log(id);
+            console.log(title);
+
+            modal = $('#removeConfirmationModal')
+
+            $('#removeConfirmationModal').modal('show');
+
+            $('#removeConfirmationModal').find('.modal-title').text('Remove product')
+            $('#removeConfirmationModal').find('.modal-body').text('Are you sure you want to remove product: ' + title)
+            $('#removeConfirmationModal').find('.modal-body').attr('product-id', id)
+ @*           $('#removeConfirmationModal').find('#modal-accept-button').removeAttr('onClick');
+            $('#removeConfirmationModal').find('#modal-accept-button').attr('onClick', removeAjaxCallback(id));*@
+        }
+
+        function removeAjaxCallback() {
+            const id = $('#removeConfirmationModal').find('.modal-body').attr("product-id");
+            console.log('removeAjaxCallback: id = ', id);
+
+            $('#removeConfirmationModal').modal('hide');
+
+            endpointUrl = '@Url.Action("RemoveProduct")/' + id;
+
+            if (id != '') {
+                $.ajax({
+                    type: "DELETE",
+                    url: endpointUrl,
+                    dataType: "json",
+                    success: function (result) { removeProductFromTheList(result.Product) },
+                    error: function (req, status, error) {console.log(status) }
+                })
+            }
+
+           // $('#removeConfirmationModal').modal('hide')
+        }
+
+        function removeProductFromTheList(product) {
+            $('#product-' + product.Id).fadeOut('slow');
+            console.log(product);
+        }
+
+        function openAddProductModal() {
+            $('#addProductModal').modal('show');
+        }
+
+        function saveProductAjaxCallback() {
+            const title = $('#addProductModal').find('#inputTitle').val();
+            const category = $('#addProductModal').find('#inputCategory').val();
+            const price = $('#addProductModal').find('#inputPrice').val();
+            const description = $('#addProductModal').find('#textareaDescription').val();
+            const image = $('#addProductModal').find('#inputImage').val();
+
+            const newProduct = { Id: null, Title: title, Price: price, Category: category, Description: description, Image: image };
+
+            console.log($('#addProductModal').find('#inputTitle').val());
+            console.log(newProduct)
+
+            if (true) { // here goes data validation check - do reactive forms if possible
+                $.ajax({
+                    type: "POST",
+                    url: '@Url.Action("AddProduct")',
+                    data: newProduct,
+                    dataType: "json",
+                    success: function (result) { onAddProductAjaxCallbackSuccess(result) },
+                    error: function (req, status, error) { console.log(status) }
+                })
+            }
+        }
+
+        function onAddProductAjaxCallbackSuccess(result) {
+            if (result.Product == null) {
+                throw new Error('Produc is null!');
+            }
+            console.log(result);
+            $('#addProductModal').modal('hide');
+
+            $("#products-table").find('tbody')
+                .prepend($('<tr>')
+                    .append($('<td>')
+                        .append($('<img>')
+                            .attr('src', result.Product.Image)
+                            .attr('alt', 'ProductImage')
+                            .attr('width', '100px')
+                            .text('Image')
+                        )
+                    ).append($('<td>')
+                        .append(result.Product.Title)
+                    ).append($('<td>')
+                        .append(result.Product.Category)
+                    ).append($('<td>')
+                        .append(result.Product.Description)
+                    ).append($('<td>')
+                        .append(result.Product.Price)
+                    ).append($('<td>')
+                        .append(`<button type="button" onclick="removeProductAjax(${result.Product.Id}, ${result.Product.Title})" class="btn btn-danger">X</button>`)
+                    )
+                );
+        }
+    </script>
+}
+
+<style>
+    .fixed {
+        position: fixed;
+        bottom: 50px;
+        right: 67px;
+    }
+</style>
